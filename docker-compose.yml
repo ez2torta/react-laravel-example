@@ -53,7 +53,16 @@ services:
       - ./mysql/my.cnf:/etc/mysql/my.cnf
     networks:
       - app-network
-
+  react:
+    build: ./react/
+    command: npm start
+    volumes:
+      - ./react/:/usr/app/
+      - /usr/app/node_modules
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
 #Docker Networks
 networks:
   app-network:
