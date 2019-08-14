@@ -1,14 +1,16 @@
 // App.js
 
-import React, { Component } from 'react';
-import Button from '@material-ui/core/Button';
+import React from 'react';
+import Header from '../Header/header'
+import Main from '../Main/main'
 
-class App extends Component {
+class App extends React.Component {
   render() {
     return (
-      <Button variant="contained" color="primary">
-        Welcome Material UI
-      </Button>
+      <div>
+        <Header />
+        <Main />
+      </div>
     );
   }
 }
