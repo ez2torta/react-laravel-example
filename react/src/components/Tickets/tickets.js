@@ -3,9 +3,11 @@ import MaterialTable from 'material-table';
 import { connect } from 'react-redux'
 import Container from '@material-ui/core/Container';
 import CssBaseline from '@material-ui/core/CssBaseline';
-import { isEmpty } from 'lodash'
+import { isEmpty, map } from 'lodash'
 import { Redirect } from 'react-router-dom';
 import CircularProgress from '@material-ui/core/CircularProgress';
+import Select from '@material-ui/core/Select';
+import MenuItem from '@material-ui/core/MenuItem';
 
 
 const mapStateToProps = (state) => {
@@ -13,19 +15,19 @@ const mapStateToProps = (state) => {
         user: state.auth.user,
         userList: state.ticket.users,
         tickets: state.ticket.tickets,
-        loading: state.ticket.isLoading,
-
+        loadingUsers: state.ticket.isLoadingUsers,
+        loadingTickets: state.ticket.isLoadingTickets,
     }
 };
 
 const mapDispatchToProps = (dispatch) => {
     return {
-        listUsers: (token) => dispatch({ type: 'LIST_USERS_REQUEST', payload: { token } }),
-        listTicket: (token) => dispatch({ type: 'LIST_TICKET_REQUEST', payload: { token } }),
-        editTicket: (token) => dispatch({ type: 'EDIT_TICKET_REQUEST', payload: { token } }),
-        deleteTicket: (token) => dispatch({ type: 'DELETE_TICKET_REQUEST', payload: { token } }),
-        createTicket: (token) => dispatch({ type: 'CREATE_TICKET_REQUEST', payload: { token } }),
-        assignTicket: (token) => dispatch({ type: 'ASSIGN_TICKET_REQUEST', payload: { token } }),
+        listUsers: (payload) => dispatch({ type: 'LIST_USERS_REQUEST', payload: payload }),
+        listTicket: (payload) => dispatch({ type: 'LIST_TICKET_REQUEST', payload: payload }),
+        editTicket: (payload) => dispatch({ type: 'EDIT_TICKET_REQUEST', payload: payload }),
+        deleteTicket: (payload) => dispatch({ type: 'DELETE_TICKET_REQUEST', payload: payload }),
+        createTicket: (payload) => dispatch({ type: 'CREATE_TICKET_REQUEST', payload: payload }),
+        assignTicket: (payload) => dispatch({ type: 'ASSIGN_TICKET_REQUEST', payload: payload }),
     }
 }
 
@@ -35,32 +37,113 @@ class TicketList extends React.Component {
         super(props);
         // No llames this.setState() aquí!
         this.state = {
-            columns: [
-                { title: 'Nombre', field: 'name' },
-                { title: 'Ticket', field: 'ticket' },
-                { title: 'Tomado', field: 'taken', type: 'datetime' }
-            ],
+            columns: this.columnParser(),
             data: [
-                { name: 'Usuario1', ticket: 63, taken: Date(Date.now()).toString() },
-                { name: 'Usuario2', ticket: 64, taken: Date(Date.now()).toString() },
+                { user: { name: 'Usuario1', id: 1 }, ticket: 63, taken: Date(Date.now()).toString(), wea_id: 3 },
+                { user: { name: 'Usuario2', id: 2 }, ticket: 64, taken: Date(Date.now()).toString() },
             ]
         }
     }
 
+    columnParser() {
+        // const userList = this.props.userList
+        const userList = [
+            { name: 'Usuario1', id: 1 },
+            { name: 'Usuario2', id: 2 },
+            { name: 'Usuario3', id: 3 }
+        ]
+        return [
+            {
+                title: 'Usuario',
+                field: 'user',
+                // editable: 'onAdd',
+                render: rowData => <span>{rowData.user.name}</span>, // ver lookup?
+                editComponent: props => (
+                    <Select value={props.value ? props.value : {}}
+                        renderValue={user => user.name}
+                        onChange={e => props.onChange(e.target.value)}>
+                        {userList.map(user =>
+                            <MenuItem value={user}
+                                key={user.id}>
+                                {user.name}
+                            </MenuItem>)
+                        }
+                    </Select>
+                )
+            },
+            { title: 'Ticket', field: 'ticket', type: 'numeric' },
+            { title: 'Tomado', field: 'taken', type: 'datetime' }
+        ]
+    }
+
     componentDidMount() {
-        const token = this.props.user ? this.props.user.token : 2
+        const token = this.props.user && this.props.user.token ? this.props.user.token : 2
         this.props.listTicket(token)
+    }
+
+    actions() {
+        // si no es admin
+        if (false) {
+            return [
+                {
+                    icon: 'check',
+                    tooltip: 'Tomar Ticket',
+                    onClick: (event, rowData) => alert("You saved " + rowData.name)
+                }
+            ]
+        }
+        else {
+            return []
+        }
+    }
+
+    editable() {
+        const state = this.state
+        const setState = (data) => this.setState(data);
+        const token = this.props.user.token
+        if (false) {
+            return {
+            }
+        }
+        else {
+            return {
+                onRowAdd: newData =>
+                    new Promise(resolve => {
+                        setTimeout(() => {
+                            resolve();
+                            this.props.createTicket({ token: token, ticketData: newData })
+                        }, 600);
+                    }),
+                onRowUpdate: (newData, oldData) =>
+                    new Promise(resolve => {
+                        setTimeout(() => {
+                            resolve();
+                            this.props.editTicket({ token: token, ticketData: newData })
+                        }, 600);
+                    }),
+                onRowDelete: oldData => {
+                    console.log(oldData)
+                    return new Promise(resolve => {
+                        setTimeout(() => {
+                            resolve();
+                            const ticketId = oldData.ticket
+                            this.props.deleteTicket({ token: token, ticketId: ticketId })
+                        }, 600);
+                    })
+                },
+            }
+        }
+
     }
 
     render() {
         const state = this.state
-        const setState = (asdf) => this.setState(asdf);
         const user = this.props.user
         const loading = this.props.loading
         if (isEmpty(user)) {
             return <Redirect to="/" />;
         }
-        if(loading){
+        if (loading) {
             return <CircularProgress></CircularProgress>
         }
         return (
@@ -70,35 +153,8 @@ class TicketList extends React.Component {
                     title="Tickets"
                     columns={state.columns}
                     data={state.data}
-                    editable={{
-                        onRowAdd: newData =>
-                            new Promise(resolve => {
-                                setTimeout(() => {
-                                    resolve();
-                                    const data = [...state.data];
-                                    data.push(newData);
-                                    setState({ ...state, data });
-                                }, 600);
-                            }),
-                        onRowUpdate: (newData, oldData) =>
-                            new Promise(resolve => {
-                                setTimeout(() => {
-                                    resolve();
-                                    const data = [...state.data];
-                                    data[data.indexOf(oldData)] = newData;
-                                    setState({ ...state, data });
-                                }, 600);
-                            }),
-                        onRowDelete: oldData =>
-                            new Promise(resolve => {
-                                setTimeout(() => {
-                                    resolve();
-                                    const data = [...state.data];
-                                    data.splice(data.indexOf(oldData), 1);
-                                    setState({ ...state, data });
-                                }, 600);
-                            }),
-                    }}
+                    actions={this.actions.bind(this)(user)}
+                    editable={this.editable.bind(this)(user)}
                 />
             </Container>
         );

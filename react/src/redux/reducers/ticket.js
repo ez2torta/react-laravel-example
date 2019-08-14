@@ -2,7 +2,6 @@ const initialState = {
     tickets: [],
     ticketResult: false,
     users: [],
-    isLoading: false,
     isLoadingTickets: false,
     isLoadingUsers: false
 }

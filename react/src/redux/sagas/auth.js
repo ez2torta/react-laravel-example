@@ -20,9 +20,7 @@ export function* loginSaga(action) {
           payload: resp.data,
       });
       yield put({type: 'LOGIN_STATUS', status: 'complete'});
-      // Hacer la redirección?
-      // TODO
-      yield put(push('/tickets'));
+      // Hacer la redirección? (la va a hacer el componente)
 
   } catch (err) {
       yield put({type: 'LOGIN_STATUS', status: 'error', err});
